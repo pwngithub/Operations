@@ -17,6 +17,13 @@ if uploaded_file1:
 
     st.subheader("🔧 Construction Overview")
 
+    st.subheader("🔗 Open Full Construction Dashboard")
+    st.markdown(
+        '[🛠️ Click here to open the full construction dashboard](https://pwnconstruction.streamlit.app/)',
+        unsafe_allow_html=True
+    )
+
+
     def get_work_type(desc):
         if pd.isna(desc): return "Unknown"
         if "Strand" in desc: return "Strand"
