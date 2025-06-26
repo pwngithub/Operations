@@ -101,8 +101,11 @@ if uploaded_file2:
 
     # KPIs
     st.metric("Total Talley Records", len(df_tfiltered))
+    if "MRC" in df_tfiltered.columns:
     df_tfiltered["MRC"] = pd.to_numeric(df_tfiltered["MRC"], errors="coerce")
     st.metric("Total MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
+else:
+    st.warning("MRC column not found in Talley data.")
 
     # MRC by Category Chart
     if "Category" in df_tfiltered.columns:
