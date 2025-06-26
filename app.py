@@ -102,21 +102,19 @@ if uploaded_file2:
     # KPIs
     st.metric("Total Talley Records", len(df_tfiltered))
     if "MRC" in df_tfiltered.columns:
-    df_tfiltered["MRC"] = pd.to_numeric(df_tfiltered["MRC"], errors="coerce")
-    st.metric("Total MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
+        df_tfiltered["MRC"] = pd.to_numeric(df_tfiltered["MRC"], errors="coerce")
+        st.metric("Total MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
+    else:
+        st.warning("MRC column not found in Talley data.")
 else:
-    st.warning("MRC column not found in Talley data.")
 
     # MRC by Category Chart
-    if "Category" in df_tfiltered.columns:
-        mrc_chart_data = df_tfiltered.groupby("Category")["MRC"].sum().reset_index()
         mrc_chart = alt.Chart(mrc_chart_data).mark_bar().encode(
             x="Category", y="MRC"
         ).properties(width=600)
         st.altair_chart(mrc_chart)
 
     # Chart by Status
-    reason_chart_data = df_tfiltered["Status"].value_counts().reset_index()
     reason_chart_data.columns = ["Status", "Count"]
     chart2 = alt.Chart(reason_chart_data).mark_bar().encode(
         x="Status", y="Count"
@@ -125,8 +123,6 @@ else:
 
     # Table
     st.subheader("📋 Talley Detail Table")
-    st.dataframe(df_tfiltered)
-    csv2 = df_tfiltered.to_csv(index=False).encode()
     st.download_button("Download Filtered Talley Data", csv2, "talley_filtered.csv", "text/csv")
 
 # Combined View
@@ -135,8 +131,4 @@ if uploaded_file1 and uploaded_file2:
 
     combined_kpi_col1, combined_kpi_col2 = st.columns(2)
     with combined_kpi_col1:
-        st.metric("Construction Records", len(df_filtered))
-        st.metric("Bonus Total", f"${df_filtered['Bonus'].sum():,.2f}")
     with combined_kpi_col2:
-        st.metric("Talley Records", len(df_tfiltered))
-        st.metric("Talley MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
