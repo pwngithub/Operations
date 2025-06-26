@@ -101,6 +101,7 @@ if uploaded_file2:
 
     # KPIs
     st.metric("Total Talley Records", len(df_tfiltered))
+    df_tfiltered["MRC"] = pd.to_numeric(df_tfiltered["MRC"], errors="coerce")
     st.metric("Total MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
 
     # MRC by Category Chart
