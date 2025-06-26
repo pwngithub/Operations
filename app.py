@@ -54,6 +54,32 @@ if uploaded_file1:
     ).properties(width=900)
     st.altair_chart(week_chart)
 
+    st.subheader("📋 Construction Drill-down Filters")
+
+    # Employee/Status filters (based on available columns)
+    available_techs = df_filtered["Who filled this out?"].dropna().unique()
+    selected_tech = st.selectbox("Filter by Technician", ["All"] + list(available_techs))
+
+    if selected_tech != "All":
+        df_filtered = df_filtered[df_filtered["Who filled this out?"] == selected_tech]
+
+    # Group by Technician (if not already filtered)
+    st.subheader("👷 Bonus by Technician")
+    tech_group = df_filtered.groupby("Who filled this out?")["Bonus"].sum().reset_index()
+    tech_group.columns = ["Technician", "Total Bonus"]
+    st.dataframe(tech_group)
+
+    # Optional grouping by Work Type
+    st.subheader("📌 Work Type Breakdown")
+    worktype_group = df_filtered["Work Type"].value_counts().reset_index()
+    worktype_group.columns = ["Work Type", "Count"]
+    st.dataframe(worktype_group)
+
+    # Export current drill-down
+    csv_filtered_construction = df_filtered.to_csv(index=False).encode()
+    st.download_button("Download Filtered Construction Drill-down", csv_filtered_construction, "construction_drilldown.csv", "text/csv")
+
+
     bonus_summary = df_filtered.groupby("Who filled this out?")["Bonus"].sum().reset_index()
     bonus_summary.columns = ["Technician", "Total Bonus"]
     st.subheader("👷 Per-Tech Bonus Breakdown")
@@ -74,10 +100,6 @@ if uploaded_file1:
     st.download_button("Download Filtered Construction Data", csv, "construction_filtered.csv", "text/csv")
 
 if uploaded_file2:
-    df_talley = pd.read_excel(uploaded_file2)
-    df_talley["Date"] = pd.to_datetime(df_talley["Date"], errors="coerce")
-
-    st.subheader("📦 Talley Status Overview")
 
     employees = df_talley["Employee"].dropna().unique()
     emp_filter = st.multiselect("Filter by Employee", employees, default=employees)
@@ -90,12 +112,42 @@ if uploaded_file2:
         (df_talley["Date"] <= pd.to_datetime(date_range2[1]))
     ]
 
+    df_tfiltered["Month"] = df_tfiltered["Date"].dt.to_period("M").astype(str)
+    available_months = sorted(df_tfiltered["Month"].dropna().unique())
+    selected_months = st.multiselect("Filter by Month", available_months, default=available_months)
+    df_tfiltered = df_tfiltered[df_tfiltered["Month"].isin(selected_months)]
+
     st.metric("Total Talley Records", len(df_tfiltered))
     if "MRC" in df_tfiltered.columns:
         df_tfiltered["MRC"] = pd.to_numeric(df_tfiltered["MRC"], errors="coerce")
         st.metric("Total MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
     else:
         st.warning("MRC column not found in Talley data.")
+
+    if "Reason" in df_tfiltered.columns:
+        reason_grouped = df_tfiltered["Reason"].value_counts().reset_index()
+        reason_grouped.columns = ["Reason", "Count"]
+        st.subheader("📊 Reason Breakdown")
+        reason_chart = alt.Chart(reason_grouped).mark_bar().encode(
+            x="Reason", y="Count"
+        ).properties(width=800)
+        st.altair_chart(reason_chart)
+
+        total_reason_mrc = df_tfiltered.groupby("Reason")["MRC"].sum(numeric_only=True).reset_index()
+        total_reason_mrc.columns = ["Reason", "Total MRC"]
+        st.dataframe(total_reason_mrc)
+
+        # Drill-down filters
+        selected_reason = st.selectbox("Drill down by Reason", ["All"] + list(reason_grouped["Reason"]))
+        selected_status = st.selectbox("Drill down by Status", ["All"] + list(df_tfiltered["Status"].dropna().unique()))
+        selected_employee = st.selectbox("Drill down by Employee", ["All"] + list(df_tfiltered["Employee"].dropna().unique()))
+
+        if selected_reason != "All":
+            df_tfiltered = df_tfiltered[df_tfiltered["Reason"] == selected_reason]
+        if selected_status != "All":
+            df_tfiltered = df_tfiltered[df_tfiltered["Status"] == selected_status]
+        if selected_employee != "All":
+            df_tfiltered = df_tfiltered[df_tfiltered["Employee"] == selected_employee]
 
     if "Category" in df_tfiltered.columns:
         mrc_chart_data = df_tfiltered.groupby("Category")["MRC"].sum().reset_index()
@@ -126,3 +178,8 @@ if uploaded_file1 and uploaded_file2:
         st.metric("Talley Records", len(df_tfiltered))
         if "MRC" in df_tfiltered.columns:
             st.metric("Talley MRC", f"${df_tfiltered['MRC'].sum():,.2f}")
+
+
+# Placeholder for future: Scheduled reporting automation
+# You could use Streamlit's scheduling with cron + cloud storage + PDF export
+st.markdown("📬 **Scheduled Reports** (coming soon: auto-generated PDF or email summaries)")
